@@ -77,7 +77,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                     _stats[key].SampleCount = 1;
                 }
                 var obj = _stats[key];
-                
+
                 var pushObj = {
                     MetricName: key,
                     Timestamp: new Date,
@@ -111,7 +111,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
                     _statsWithDimensions[index].SampleCount = 1;
                 }
                 var obj = _statsWithDimensions[index];
-                
+
                 var pushObj = {
                     MetricName: obj.MetricName,
                     Timestamp: new Date,
@@ -176,7 +176,7 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
     };
 
     api.stat = function(key, value, unit, dimensions) {
-        if (!unit || validMetricValues.indexOf(unit) === -1) { 
+        if (!unit || validMetricValues.indexOf(unit) === -1) {
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : Error adding stat : Invalid unit : ' + unit); }
             return;
         } // Only accept valid AWS metrics
@@ -210,7 +210,9 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
             if (_statsWithDimensions.length > 0) {
                 for (index in _statsWithDimensions) {
                     // Loop through each dimensions stat
-                    if (JSON.stringify(_statsWithDimensions[index].Dimensions) === JSON.stringify(convertedDimensions)) {
+                    if (JSON.stringify(_statsWithDimensions[index].Dimensions) === JSON.stringify(convertedDimensions) && _statsWithDimensions[index].MetricName === key) {
+                        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Updating existing dimensions : ' + key); }
+
                         // Edit the existing dimensions set
                         _statsWithDimensions[index].Maximum = value > _statsWithDimensions[index].Maximum ? value : _statsWithDimensions[index].Maximum;
                         _statsWithDimensions[index].Minimum = value < _statsWithDimensions[index].Minimum ? value : _statsWithDimensions[index].Minimum;
