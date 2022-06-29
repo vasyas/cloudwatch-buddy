@@ -140,13 +140,39 @@ var CloudWatchBuddyMetrics = function(cloudwatch, options){
         }
 
         if (params.MetricData.length > 0) {
-            // TODO: Check size before sending and split if needed
-            cloudwatch.putMetricData(params, function(err, data){
-                if (err && _debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : Put metrics error : ' + err); }
-                if (!err && _debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : Put metrics success'); }
-                // TODO: if err, see if retryable
-                setUploadInterval();
-            });
+            // split MetricData in chunks by 10
+
+            var chunks = [];
+
+            while (params.MetricData.length > 0) {
+                chunks.push({
+                    Namespace: params.Namespace,
+                    MetricData: params.MetricData.splice(0, 10)
+                });
+            }
+
+            let chunk = 0
+
+            function sendChunks() {
+                if (!chunks.length) {
+                    setUploadInterval();
+                    return
+                }
+
+                if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : Sending chunk : ' + (chunk ++ )); }
+
+                cloudwatch.putMetricData(chunks.pop(), function(err, data) {
+                    if (err) {
+                        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : ERROR : ', err); }
+                    } else {
+                        if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : ', data); }
+                    }
+
+                    sendChunks();
+                });
+            }
+
+            sendChunks()
         } else {
             if (_debug) { console.log (new Date() + ' : CloudWatchBuddyMetrics : INFO : No metrics to put'); }
             setUploadInterval();
